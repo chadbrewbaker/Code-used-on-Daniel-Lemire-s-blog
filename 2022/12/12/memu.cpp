@@ -1,7 +1,5 @@
-#include <iostream>
 #include <cstring>
-
-
+#include <iostream>
 
 #if defined(_WIN32)
 #include <psapi.h>
@@ -115,13 +113,40 @@ inline size_t getCurrentRSS() {
 #endif
 }
 
-int main() {
-  int N = 1000000;
-  for(int k = 1; k <= N;k ++) {
-    char * leak = new char[4];
+unsigned int ilog2(unsigned int val) {
+  if (val == 0)
+    return UINT_MAX;
+  if (val == 1)
+    return 0;
+  unsigned int ret = 0;
+  while (val > 1) {
+    val >>= 1;
+    ret++;
+  }
+  return ret;
+}
+
+// Usage ./memu.cpp NEW_COUNT
+int main(int argc, char *argv[]) {
+  unsigned long N;
+  unsigned long *buffer[1000];
+  sscanf(argv[1], "%lud", &N);
+  unsigned long maxbuf = 0;
+  for (unsigned long k = 1; k <= N; k++) {
+    unsigned long *leak = new unsigned long[4];
     memset(leak, k, 4);
+    leak[0] = k;
+
+    buffer[ilog2(k)] = leak;
+    maxbuf = ilog2(k);
   }
   int64_t bytes = getCurrentRSS();
-  std::cout <<  bytes * 1.0 / N << std::endl;
+  std::cout << bytes * 1.0 / N << std::endl;
+
+  for (int i = 0; i <= maxbuf; i++)
+    std::cout << i << " " << buffer[i][0] << " " << buffer[i][1] << " "
+              << buffer[i][2] << " "
+              << " " << buffer[i][3] << std::endl;
+
   return EXIT_SUCCESS;
 }
